@@ -1,0 +1,451 @@
+openapi: '3.0.3'
+info:
+  title: Camarin Media Processing API
+  version: '1.0.0'
+  description: AI-powered media processing microservice API
+
+servers:
+  - url: http://localhost:5000/api
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    Label:
+      type: object
+      properties:
+        description:
+          type: string
+        score:
+          type: number
+          format: float
+
+    SafetyResult:
+      type: object
+      properties:
+        adult:
+          type: string
+          enum: [UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY]
+        spoof:
+          type: string
+          enum: [UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY]
+        medical:
+          type: string
+          enum: [UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY]
+        violence:
+          type: string
+          enum: [UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY]
+        racy:
+          type: string
+          enum: [UNKNOWN, VERY_UNLIKELY, UNLIKELY, POSSIBLE, LIKELY, VERY_LIKELY]
+
+    Job:
+      type: object
+      properties:
+        _id:
+          type: string
+        userId:
+          type: string
+        originalName:
+          type: string
+        storagePath:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        caption:
+          type: string
+        labels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+        safetyResult:
+          $ref: '#/components/schemas/SafetyResult'
+        flagged:
+          type: boolean
+        flaggedCategories:
+          type: array
+          items:
+            type: string
+        error:
+          type: string
+        attempts:
+          type: integer
+        imageUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        _id:
+          type: string
+        userId:
+          type: string
+        jobId:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/signup:
+    post:
+      summary: Create a new account
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      summary: Log in to an existing account
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token using httpOnly refresh cookie
+      security: []
+      tags: [Auth]
+      responses:
+        '200':
+          description: New access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      summary: Log out and clear refresh token cookie
+      tags: [Auth]
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /upload:
+    post:
+      summary: Upload an image for AI processing
+      tags: [Upload]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: JPG, PNG, or WEBP image, max 5MB
+      responses:
+        '201':
+          description: Upload accepted, job queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  status:
+                    type: string
+                    example: pending
+        '400':
+          description: No file provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: File exceeds 5MB limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '415':
+          description: Unsupported file type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /jobs:
+    get:
+      summary: List all jobs for the authenticated user
+      tags: [Jobs]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        '200':
+          description: Paginated job list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+        '401':
+          description: Unauthorized
+
+  /jobs/{id}:
+    get:
+      summary: Get a single job by ID
+      tags: [Jobs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found
+
+  /jobs/{id}/retry:
+    post:
+      summary: Retry a failed job
+      tags: [Jobs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job re-queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  status:
+                    type: string
+                    example: pending
+        '400':
+          description: Job is not in failed state
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found
+
+  /notifications:
+    get:
+      summary: Get notifications for the authenticated user
+      tags: [Notifications]
+      responses:
+        '200':
+          description: Notification list with unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  unreadCount:
+                    type: integer
+        '401':
+          description: Unauthorized
+
+  /notifications/read-all:
+    put:
+      summary: Mark all notifications as read
+      tags: [Notifications]
+      responses:
+        '200':
+          description: All notifications marked read
+        '401':
+          description: Unauthorized
+
+  /notifications/{id}/read:
+    put:
+      summary: Mark a single notification as read
+      tags: [Notifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Notification not found
+
+  /health:
+    get:
+      summary: Health check
+      security: []
+      tags: [System]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
