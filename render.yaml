@@ -25,10 +25,7 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        fromService:
-          type: web
-          name: camarin-frontend
-          property: url
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: HF_API_KEY
@@ -67,14 +64,12 @@ services:
     plan: free
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: camarin-api
-          property: url
+        sync: false
 
-# Managed Redis Key-Value Store
+  # Managed Redis Key-Value Store
   - type: redis
     name: camarin-redis
     region: ohio
     plan: free
     maxmemoryPolicy: noeviction
+    ipAllowList: []
