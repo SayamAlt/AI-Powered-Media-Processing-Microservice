@@ -31,10 +31,11 @@ router.post('/signup', async (req, res, next) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const cleanEmail = email.toLowerCase();
+    const existing = await User.findOne({ email: cleanEmail });
     if (existing) return res.status(409).json({ error: 'Email already registered' });
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ email, passwordHash });
+    const user = await User.create({ email: cleanEmail, passwordHash });
     setRefreshCookie(res, signRefresh(user._id.toString()));
     res.status(201).json({ accessToken: signAccess(user._id.toString()), user: { id: user._id, email: user.email } });
   } catch (err) {

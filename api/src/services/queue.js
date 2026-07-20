@@ -6,6 +6,7 @@ function createRedisConnection() {
   const opts = {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    family: 0,
   };
   if (url.startsWith('rediss://')) {
     opts.tls = { rejectUnauthorized: false };

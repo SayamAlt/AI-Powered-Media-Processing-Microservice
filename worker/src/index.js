@@ -10,6 +10,7 @@ function createRedisConnection() {
   const opts = {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    family: 0,
   };
   if (url.startsWith('rediss://')) {
     opts.tls = { rejectUnauthorized: false };
@@ -44,6 +45,22 @@ async function start() {
   });
 
   console.log('Worker started, listening for jobs...');
+
+  setInterval(async () => {
+    try {
+      const pendingJobs = await Job.find({ status: 'pending' }).limit(5);
+      for (const job of pendingJobs) {
+        console.log(`Worker sweeper processing job ${job._id}...`);
+        await processMedia({
+          jobId: job._id.toString(),
+          storagePath: job.storagePath,
+          userId: job.userId.toString(),
+        });
+      }
+    } catch {
+      // ignore concurrent processing errors
+    }
+  }, 5000);
 }
 
 start().catch(err => {
