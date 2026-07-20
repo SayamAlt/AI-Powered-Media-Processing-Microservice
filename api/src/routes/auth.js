@@ -17,10 +17,11 @@ function signRefresh(userId) {
 }
 
 function setRefreshCookie(res, token) {
+  const isProd = process.env.NODE_ENV === 'production';
   res.cookie('refreshToken', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
@@ -68,7 +69,12 @@ router.post('/refresh', (req, res) => {
 });
 
 router.post('/logout', authenticate, (_req, res) => {
-  res.clearCookie('refreshToken');
+  const isProd = process.env.NODE_ENV === 'production';
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+  });
   res.json({ message: 'Logged out' });
 });
 

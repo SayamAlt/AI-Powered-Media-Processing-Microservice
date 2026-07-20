@@ -15,8 +15,17 @@ const app = express();
 
 app.set('trust proxy', 1);
 app.use(helmet());
+const allowedOrigin = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.replace(/\/$/, '') : 'http://localhost:3000';
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.replace(/\/$/, '');
+    if (cleanOrigin === allowedOrigin || allowedOrigin === '*' || cleanOrigin.endsWith('.onrender.com')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 app.use(cookieParser());
