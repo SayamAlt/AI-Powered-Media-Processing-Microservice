@@ -5,7 +5,19 @@ const { connectDB } = require('./config/db');
 const { processMedia } = require('./processors/mediaProcessor');
 const Job = require('./models/Job');
 
-const connection = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
+function createRedisConnection() {
+  const url = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+  const opts = {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  };
+  if (url.startsWith('rediss://')) {
+    opts.tls = { rejectUnauthorized: false };
+  }
+  return new Redis(url, opts);
+}
+
+const connection = createRedisConnection();
 
 async function start() {
   await connectDB();

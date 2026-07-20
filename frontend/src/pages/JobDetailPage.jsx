@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Layout from '../components/Layout';
 import { usePolling } from '../hooks/usePolling';
-import client from '../api/client';
+import client, { getFullImageUrl } from '../api/client';
 
 const STATUS_COLORS = {
   pending: '#f59e0b',
@@ -52,7 +52,7 @@ export default function JobDetailPage() {
         <div className="detail-grid">
           <div className="detail-image-col">
             {job.imageUrl && (
-              <img className="detail-image" src={job.imageUrl} alt={job.originalName} />
+              <img className="detail-image" src={getFullImageUrl(job.imageUrl)} alt={job.originalName} />
             )}
           </div>
           <div className="detail-info-col">

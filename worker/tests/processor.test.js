@@ -39,7 +39,7 @@ describe('processMedia', () => {
 
   it('runs full pipeline and marks job completed', async () => {
     await processMedia(JOB_DATA);
-    expect(downloadFile).toHaveBeenCalledWith('uploads/test.jpg');
+    expect(downloadFile).toHaveBeenCalledWith('uploads/test.jpg', 'job123');
     expect(getCaption).toHaveBeenCalledWith(expect.any(Buffer));
     expect(getLabels).toHaveBeenCalledWith(expect.any(Buffer));
     expect(checkSafety).toHaveBeenCalledWith(expect.any(Buffer));

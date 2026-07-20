@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const Job = require('../models/Job');
 
 function getS3Client() {
   if (!process.env.MINIO_ENDPOINT) return null;
@@ -20,17 +21,21 @@ function getS3Client() {
 
 const s3 = getS3Client();
 
-async function downloadFile(key) {
+async function downloadFile(key, jobId) {
   if (s3 && process.env.MINIO_BUCKET) {
-    const response = await s3.send(new GetObjectCommand({
-      Bucket: process.env.MINIO_BUCKET,
-      Key: key,
-    }));
-    const chunks = [];
-    for await (const chunk of response.Body) {
-      chunks.push(chunk);
+    try {
+      const response = await s3.send(new GetObjectCommand({
+        Bucket: process.env.MINIO_BUCKET,
+        Key: key,
+      }));
+      const chunks = [];
+      for await (const chunk of response.Body) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
+    } catch (s3Err) {
+      console.warn('S3 download failed, falling back to MongoDB/Local:', s3Err.message);
     }
-    return Buffer.concat(chunks);
   }
 
   const filename = path.basename(key);
@@ -45,7 +50,15 @@ async function downloadFile(key) {
       return await fs.promises.readFile(filePath);
     }
   }
-  throw new Error(`File not found: ${key}`);
+
+  if (jobId) {
+    const jobDoc = await Job.findById(jobId).select('+imageBuffer');
+    if (jobDoc && jobDoc.imageBuffer) {
+      return jobDoc.imageBuffer;
+    }
+  }
+
+  throw new Error(`File not found for key: ${key}`);
 }
 
 module.exports = { downloadFile };

@@ -10,7 +10,7 @@ async function processMedia(jobData) {
   const job = await Job.findById(jobId);
   if (!job) throw new Error(`Job ${jobId} not found`);
   await Job.findByIdAndUpdate(jobId, { status: 'processing', $inc: { attempts: 1 } });
-  const imageBuffer = await downloadFile(storagePath);
+  const imageBuffer = await downloadFile(storagePath, jobId);
   const caption = await getCaption(imageBuffer);
   const labels = await getLabels(imageBuffer);
   const { safetyResult, flagged, flaggedCategories } = await checkSafety(imageBuffer);

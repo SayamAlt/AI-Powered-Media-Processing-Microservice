@@ -5,7 +5,9 @@ async function connectDB() {
   if (!uri) {
     throw new Error('MONGODB_URI environment variable is missing. Please set MONGODB_URI in your environment settings (e.g. MongoDB Atlas URI).');
   }
-  await mongoose.connect(uri);
+  await mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 5000,
+  });
   console.log('MongoDB connected');
 }
 

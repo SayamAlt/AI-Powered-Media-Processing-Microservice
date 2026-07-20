@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { getFullImageUrl } from '../api/client';
 
 const STATUS_COLORS = {
   pending: '#f59e0b',
@@ -12,7 +13,7 @@ export default function JobCard({ job }) {
     <Link to={`/jobs/${job._id}`} className={`job-card${job.flagged ? ' flagged' : ''}`}>
       <div className="job-card-thumb">
         {job.imageUrl && (
-          <img src={job.imageUrl} alt={job.originalName} loading="lazy" />
+          <img src={getFullImageUrl(job.imageUrl)} alt={job.originalName} loading="lazy" />
         )}
       </div>
       <div className="job-card-body">

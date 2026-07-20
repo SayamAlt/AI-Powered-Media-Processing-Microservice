@@ -13,6 +13,8 @@ router.post('/', authenticate, upload.single('image'), async (req, res, next) =>
       userId: req.user.id,
       originalName: req.file.originalname,
       storagePath,
+      imageBuffer: req.file.buffer,
+      mimeType: req.file.mimetype || 'image/jpeg',
       status: 'pending',
     });
     await enqueueJob(job._id.toString(), storagePath, req.user.id);

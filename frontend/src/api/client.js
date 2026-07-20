@@ -12,6 +12,13 @@ function getApiBaseUrl() {
   return '/api';
 }
 
+export function getFullImageUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const host = getApiBaseUrl().replace(/\/api\/?$/, '');
+  return `${host}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 const API_BASE = getApiBaseUrl();
 
 const client = axios.create({ baseURL: API_BASE, withCredentials: true });

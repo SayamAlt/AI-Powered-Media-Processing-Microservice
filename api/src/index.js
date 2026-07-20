@@ -35,8 +35,32 @@ const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api/', limiter);
 
 const path = require('path');
+const fs = require('fs');
+const mongoose = require('mongoose');
+const Job = require('./models/Job');
 
 app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+app.get('/api/uploads/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const filename = path.basename(fileId);
+    const localPath = path.join(process.cwd(), 'uploads', filename);
+    if (fs.existsSync(localPath)) {
+      return res.sendFile(localPath);
+    }
+    const isObjectId = mongoose.Types.ObjectId.isValid(fileId);
+    const query = isObjectId ? { _id: fileId } : { storagePath: `uploads/${filename}` };
+    const jobDoc = await Job.findOne(query).select('+imageBuffer');
+    if (jobDoc && jobDoc.imageBuffer) {
+      res.setHeader('Content-Type', jobDoc.mimeType || 'image/jpeg');
+      return res.send(jobDoc.imageBuffer);
+    }
+    res.status(404).send('Image not found');
+  } catch {
+    res.status(404).send('Image not found');
+  }
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/jobs', jobRoutes);
@@ -50,7 +74,7 @@ const PORT = process.env.PORT || 5000;
 
 async function start() {
   await connectDB();
-  app.listen(PORT, () => console.log(`API running on port ${PORT}`));
+  app.listen(PORT, '0.0.0.0', () => console.log(`API running on port ${PORT}`));
 }
 
 if (require.main === module) {
