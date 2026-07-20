@@ -31,7 +31,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
 app.use('/api/', limiter);
 
 const path = require('path');

@@ -25,7 +25,7 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        sync: false
+        value: https://camarin-frontend.onrender.com
       - key: OPENAI_API_KEY
         sync: false
       - key: HF_API_KEY
@@ -64,7 +64,7 @@ services:
     plan: free
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: https://camarin-api.onrender.com/api
 
   # Managed Redis Key-Value Store
   - type: redis
