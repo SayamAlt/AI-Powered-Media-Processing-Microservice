@@ -20,7 +20,7 @@ export default function SignupPage() {
       setAuth(data.accessToken, data.user);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Signup failed');
+      setError(err.response?.data?.error || err.message || 'Signup failed');
     } finally {
       setLoading(false);
     }

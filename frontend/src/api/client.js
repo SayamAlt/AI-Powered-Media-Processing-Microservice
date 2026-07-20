@@ -1,7 +1,18 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+function getApiBaseUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+    const host = window.location.hostname.replace('frontend', 'api');
+    return `https://${host}/api`;
+  }
+  return '/api';
+}
+
+const API_BASE = getApiBaseUrl();
 
 const client = axios.create({ baseURL: API_BASE, withCredentials: true });
 
