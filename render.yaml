@@ -1,0 +1,80 @@
+services:
+  # Web API Service
+  - type: web
+    name: camarin-api
+    env: docker
+    dockerContext: ./api
+    dockerfilePath: ./api/Dockerfile
+    region: ohio
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: camarin-redis
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        fromService:
+          type: web
+          name: camarin-frontend
+          property: url
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: HF_API_KEY
+        sync: false
+
+  # Background Worker Service
+  - type: worker
+    name: camarin-worker
+    env: docker
+    dockerContext: ./worker
+    dockerfilePath: ./worker/Dockerfile
+    region: ohio
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: camarin-redis
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: HF_API_KEY
+        sync: false
+
+  # Frontend Web Service
+  - type: web
+    name: camarin-frontend
+    env: docker
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    region: ohio
+    plan: free
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: camarin-api
+          property: url
+
+# Managed Redis Key-Value Store
+  - type: redis
+    name: camarin-redis
+    region: ohio
+    plan: free
+    maxmemoryPolicy: noeviction
